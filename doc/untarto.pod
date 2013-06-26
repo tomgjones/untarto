@@ -4,14 +4,7 @@ untarto - put the unpacked contents of a tarball at a path
 
 =head1 SYNOPSIS
 
-    untarto PATH [PROG [ARG ...]]
-
-    OPTIONS
-    -k,--keep=N            keep N previous versions (default: 1) (NOT IMPL)
-    -d,--diff
-    -u,--unpack-only
-    -n,--dry-run
-    -t,--allow-traversal  allow absolute paths and directory traversal
+    untarto [OPTIONS] PATH [PROG [ARG ...]]
 
 =head1 DESCRIPTION
 

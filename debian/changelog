@@ -1,3 +1,9 @@
+untarto (0.1.1) UNRELEASED; urgency=low
+
+  * Fix SYNOPSIS in manpage.
+
+ -- Tom Jones <tom.jones@bccx.com>  Wed, 26 Jun 2013 21:26:04 +0100
+
 untarto (0.1) unstable; urgency=low
 
   * Initial Release.
