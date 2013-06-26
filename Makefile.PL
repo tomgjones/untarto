@@ -6,6 +6,6 @@ WriteMakefile(
     AUTHOR    => 'Tom Jones <tom.jones@bccx.com>',
     EXE_FILES => [ glob('bin/*') ],
     MAN1PODS  => {
-        'doc/untarto' => 'blib/man1/untarto.1',
+        'doc/untarto.pod' => 'blib/man1/untarto.1',
     },
 );
