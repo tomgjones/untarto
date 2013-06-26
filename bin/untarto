@@ -1,0 +1,150 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+use Archive::Tar;
+use DateTime;
+use File::Basename qw(basename dirname);
+use File::Path qw(remove_tree);
+use File::Spec::Functions qw(catfile);
+use File::Temp;
+use Getopt::Long qw(:config bundling no_ignore_case require_order);
+use Pod::Usage;
+use POSIX;
+
+my $EX_USAGE = 64;
+
+my $TIMEFMT = "%Y-%m-%dT%H:%M:%S%z";
+my $TIMERE = qr(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+\d{4});
+
+my $keep = 1;
+my ($show_diff, $dry_run, $unpack_only);
+
+GetOptions(
+    'k|keep=i'        => \$keep,
+    'd|diff'          => \$show_diff,
+    'u|unpack-only'   => \$unpack_only,
+)
+    or pod2usage(-verbose => 0, -exitval => $EX_USAGE);
+
+my ($PATH, $PROG, @ARGS) = @ARGV;
+
+defined($PATH) or pod2usage(
+    -verbose => 0, -exitval => $EX_USAGE, -message => "missing arg PATH",
+);
+
+my $outparent = dirname($PATH);
+my $timestamp = DateTime->now->strftime("%Y-%m-%dT%H:%M:%S%z");
+my $basebase = basename($PATH);
+my $outbasename = $basebase . ".$timestamp";
+my $outdir = catfile($outparent, $outbasename);
+
+my $unpack = !$dry_run;
+my $commit = (!$dry_run and !$unpack_only);
+my $delold = 1;
+
+# may want to scope this so that it gets closed automatically
+my $input;
+
+# Fork off any subprocess before we go changing directory.
+if (defined($PROG)) {
+    open($input, "-|", $PROG, @ARGS) or err_general("$!: $PROG\n");
+}
+else {
+    $input = \*STDIN;
+}
+
+# --parents option?
+if ($unpack) {
+    mkdir $outdir or die "mkdir: $!: $outdir\n";
+    chdir $outdir or die "chdir: $!: $outdir\n";
+}
+else {
+    if (!(POSIX::access($outparent, &POSIX::W_OK))) {
+        die "dir appeared not writable in dry-run mode: $outparent\n";
+    }
+}
+
+my $tar = Archive::Tar->new;
+
+$tar->read($input);
+
+# FIXME: if ran PROG, get its return code.
+if (defined($PROG)) {
+    close $input;
+    # FIXME: $? etc
+    if( WIFSIGNALED( $? ) ) {
+        warn "$PROG died with signal " . WTERMSIG( $? ) . "\n";
+        exit 199;
+    }
+    elsif( WIFEXITED( $? ) and WEXITSTATUS( $? ) != 0 ) {
+        warn "$PROG exited with value " . WEXITSTATUS( $? ) . "\n";
+        print WEXITSTATUS( $? ) . "\n";
+        exit 100;
+    }
+}
+
+my $num_expect = scalar($tar->get_files);
+
+if ($unpack) {
+    my @extracted = $tar->extract;
+    if ($num_expect != scalar(@extracted)) {
+        print "untarto: extraction failed (most common reason is "
+            . "directory traversal)\n";
+        exit 1;
+    }
+}
+
+if ($show_diff) {
+    system("diff", "-urN", $PATH, $outdir);
+    # FIXME: some error checking, tho diff has weird exit codes.
+}
+
+if ($commit) {
+    # You can't overwrite an existing symlink with symlink().
+    my $tmpnam = File::Temp::tempnam($outparent, $outbasename);
+    symlink($outbasename, $tmpnam) or die "symlink: $!: $outdir -> $PATH\n";
+    rename($tmpnam, $PATH) or die "rename: $!: $tmpnam -> $PATH\n";
+}
+
+if ($delold) {
+    opendir(my $d, $outparent) or die "opendir: $!: $outdir\n";
+    my @matches = sort { $a cmp $b }
+        grep { /^$basebase\.$TIMERE$/ } readdir($d);
+
+    if ($keep < @matches) {
+        # It's how many to keep in addition to the latest one that we've just
+        # created.
+        my $delsubscript = scalar(@matches) - $keep - 2;
+        if ($delsubscript >= 0) {
+            my @del = @matches[0..$delsubscript];
+            for (@del) {
+                if ($_ eq $outbasename) {
+                    die "fatal: was about to remove the one just created\n";
+                }
+                my $fullpath = catfile($outparent, $_);
+                remove_tree($fullpath) or die;
+            }
+        }
+    }
+}
+
+exit(0);
+
+# This POD just here for Pod::Usage; it's not the canonical interface
+# spec.
+
+=head1 NAME
+
+untarto - put the unpacked contents of a tarball at a path
+
+=head1 SYNOPSIS
+
+    untarto PATH [PROG [ARG ...]]
+
+    OPTIONS
+    -k,--keep=N     keep N previous versions (default: 1)
+    -d,--diff
+    -n
+
+=cut

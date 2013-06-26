@@ -1,0 +1,52 @@
+=head1 NAME
+
+untarto - put the unpacked contents of a tarball at a path
+
+=head1 SYNOPSIS
+
+    untarto PATH [PROG [ARG ...]]
+
+    OPTIONS
+    -k,--keep=N            keep N previous versions (default: 1) (NOT IMPL)
+    -d,--diff
+    -u,--unpack-only
+    -n,--dry-run
+    -t,--allow-traversal  allow absolute paths and directory traversal
+
+=head1 DESCRIPTION
+
+Executes PROG, which must produce output in tar format, or reads the
+tar data from standard input.
+
+Unpacks to the parent directory of PATH, into a directory named
+after the current time.  If PROG is successful, creates a
+symbolic link from the datestamped directory to the basename of
+PATH, overwriting any previous symbolic link.
+
+Guarantees isolation to specified place; will not unpack tarballs
+with absolute or traversing paths.
+
+This also now moved to a tsk, to be put into git after initial
+impl.
+
+The time format is FIXME.
+
+=head2 OPTIONS
+
+=over 4
+
+=item -k,--keep=N
+
+Keep N previous versions.
+
+=item -d,--diff
+
+Show difference with previous version before flipping link.
+
+=item -n
+
+Do everything except flipping the link.
+
+=back
+
+=cut

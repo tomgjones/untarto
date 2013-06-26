@@ -1,0 +1,7 @@
+Format-Specification: http://svn.debian.org/wsvn/dep/web/deps/dep5.mdwn?op=file&rev=135
+Maintainer: Tom Jones <tom.jones@bccx.com>
+Name: untarto
+
+Files: *
+Copyright: 2012, Tom Jones <tom.jones@bccx.com>
+License: ASL 2.0

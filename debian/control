@@ -1,0 +1,12 @@
+Source: untarto
+Section: perl
+Priority: optional
+Build-Depends: debhelper (>= 7)
+Build-Depends-Indep: perl
+Maintainer: Tom Jones <tom.jones@bccx.com>
+Standards-Version: 3.9.1
+
+Package: untarto
+Architecture: all
+Depends: ${misc:Depends}, ${perl:Depends}
+Description: put the unpacked contents of a tarball at a path
